@@ -30,23 +30,55 @@ describe "Scheduling" do
     resp = subject.get([:service, :resources], service.id)
     resp.entity.should be_empty
 
-    subject.post:resources,
-		 {code: {code: 'Room1', codeSystem: 'local'}, class_code: :location, services: [service.id]}
+    resp = subject.post:resources,
+      code: {code: 'Room1', codeSystem: 'local'},
+      class_code: :location,
+      service: service.id
+
+    resp.status.should == :created
+    resource = resp.entity
+    resource.id.should_not be_nil
 
     resp = subject.get([:service, :resources], service.id)
+
     resp.status.should == :ok
-    resp.entity.should_not be_nil
+    resp.entity.first.id.should == resource.id
+  end
+
+  let(:room) do
+    resp = subject.post :resources,
+      roles: [:location],
+      identity: {name: 'Room1',
+	code: 'room1'}
+    resp.entity
+  end
+
+  let(:surgeon) do
+    resp = subject.post :resources,
+      roles: [:surgeon],
+      identity: {name: 'Dr. Ushman Pablo',
+	license_number: '1111'}
+    resp.entity
   end
 
   it "appointment" do
     resp = subject.post :appointments,
       service: service.id,
-      resources: [room.id, surgeon.id, nurse.id],
-      period: ['2013-05-05T13:00', '2013-05-05T14:30']
+      resources: [
+	{role: 'location', resource: room.id},
+	{role: 'surgeon', resource: surgeon.id}],
+	period: ['2013-05-05T13:00', '2013-05-05T14:30']
 
-    resp.should == :created
+    resp.status.should == :created
     appointment = resp.entity
 
-    resp = subject.put [:approve, :appointmen], {id: appointmen.id}
+    #resp = subject.put [:approve, :appointmen],
+      #{id: appointmen.id}
+
+    resp = subject.get :appointments,
+      resoures: [room.id],
+      period: ['2013-05-05T00:00', '2013-05-05T23:59']
+
+    appointments = resp.entity
   end
 end

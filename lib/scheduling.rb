@@ -2,6 +2,8 @@ class Scheduling
   autoload :Service, 'scheduling/service'
   autoload :ServicesRepository, 'scheduling/services_repository'
   autoload :Responce, 'scheduling/responce'
+  autoload :Resource, 'scheduling/resource'
+  autoload :ResourceRepository, 'scheduling/resource_repository'
   autoload :Resty, 'scheduling/resty'
   include Resty
 
@@ -16,22 +18,29 @@ class Scheduling
     resp = Responce.new
 
     unless attrs[:code]
-      resp.status = :unprocessable_entity
-      resp.errors = ['code attribute required']
-      return resp
+      return unprocessable_entity(['code attribute required'])
     end
 
-    service = Service.new({id: UUID.generate}.merge(attrs))
+    service = Service.new({id: uuid}.merge(attrs))
     ServicesRepository.save(service)
-    resp.status = :created
-    resp.entity = service
-    resp
+    created(service)
   end
 
   def get_service_resources(service_id)
-    resp = Responce.new
-    resp.status = :ok
-    resp.entity = []
-    resp
+    ok(ResourceRepository.for_service(service_id))
+  end
+
+  def post_resources(attrs)
+    resource = Resource.new({id: uuid}.merge(attrs))
+    ResourceRepository.save(resource)
+    created(resource)
+  end
+
+  def post_appointments(attrs)
+    created(true)
+  end
+
+  def get_appointments(filter)
+    ok([])
   end
 end
